@@ -6,6 +6,8 @@ from .models import Wallet, Transaction
 from .serializers import TransferSerializer, TransactionSerializer
 import uuid
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from .models import Transaction, Wallet
+from django.db.models import Q
 
 class TransferView(APIView):
 
@@ -60,4 +62,15 @@ class WalletBalanceView(APIView):
     def get(self, request):
         return Response({
             'balance': request.user.wallet.balance
+        })
+
+class TransactionHistoryView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        transactions = Transaction.objects.filter(Q(sender_wallet__user=request.user) | Q(receiver_wallet__user=request.user))
+        
+        serializer = TransactionSerializer(transactions, many=True, context={'request': request})
+        return Response({
+            'transaction history': serializer.data
         })
