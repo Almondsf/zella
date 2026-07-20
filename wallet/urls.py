@@ -1,8 +1,9 @@
 from django.urls import path
-from .views import TransferView, WalletBalanceView, TransactionHistoryView
+from .views import TransferView, WalletBalanceView, TransactionHistoryView, DepositView
 
 urlpatterns = [
     path('transfer/', TransferView.as_view(), name='transfer'),
     path('balance/', WalletBalanceView.as_view(), name='balance'),
-    path('transaction-history/', TransactionHistoryView.as_view(), name='transaction-history')
+    path('transaction-history/', TransactionHistoryView.as_view(), name='transaction-history'),
+    path('deposit/', DepositView.as_view(), name='deposit')
 ]

@@ -6,8 +6,8 @@ from .models import Wallet, Transaction
 from .serializers import TransferSerializer, TransactionSerializer
 import uuid
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from .models import Transaction, Wallet
 from django.db.models import Q
+from .paystack import initialize_payment
 
 class TransferView(APIView):
 
@@ -74,3 +74,33 @@ class TransactionHistoryView(APIView):
         return Response({
             'transaction history': serializer.data
         })
+
+class DepositView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        amount = request.data.get('amount')
+        email = request.user.email
+        reference_id = str(uuid.uuid4())
+        
+        txn = Transaction.objects.create(
+            reference=reference_id,
+            amount=amount,
+            transaction_type='deposit',
+            status='pending',
+            receiver_wallet=request.user.wallet
+        )
+        paystack_response = initialize_payment(email, amount, reference_id)
+        if paystack_response['status'] == True:
+            return Response({
+                'message': 'Deposit Initiated',
+                'payment_link': paystack_response['data']['authorization_url'],
+                'reference': paystack_response['data']['reference']
+                
+            }, status=status.HTTP_200_OK)
+        else:
+            txn.delete()
+            return Response({
+            'error': 'Could not initialize payment'
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
